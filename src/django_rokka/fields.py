@@ -8,11 +8,13 @@ from django_rokka.storage import RokkaStorage
 class RokkaImageFieldFile(ImageFieldFile):
     @property
     def url(self):
-        self._require_file()
+        if not self.name:
+            return None
         return self.storage.url(self.name)
 
     def stack_url(self, stack):
-        self._require_file()
+        if not self.name:
+            return None
         return self.storage.url(self.name, stack)
 
     def delete(self, save=True):
