@@ -7,11 +7,6 @@ and gives you stack-aware URLs.
 
 ## Installation
 ```bash
-pip install django-rokka-field
-```
-
-Or directly from GitLab:
-```bash
 pip install git+https://gitlab.com/yourname/django-rokka-field.git
 ```
 
@@ -53,13 +48,3 @@ article.cover.stack_url("hero--large")
 ```
 
 ---
-
-**`.gitignore`**
-```
-__pycache__/
-*.py[cod]
-*.egg-info/
-dist/
-build/
-.env
-.venv/

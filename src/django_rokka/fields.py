@@ -17,10 +17,6 @@ class RokkaImageFieldFile(ImageFieldFile):
             return None
         return self.storage.url(self.name, stack)
 
-    def delete(self, save=True):
-        self.storage.delete(self.name)
-        super().delete(save=save)
-
 
 class RokkaImageField(ImageField):
     attr_class = RokkaImageFieldFile
@@ -42,7 +38,7 @@ class RokkaImageField(ImageField):
 
     def _pre_save(self, sender, instance, **kwargs):
         """
-        Delete old image from Rokka when field is replaced or cleared.
+        Delete old image from Rokka when field is replaced or cleared
         """
         if not instance.pk:
             return
