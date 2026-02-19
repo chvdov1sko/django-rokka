@@ -27,7 +27,7 @@ class RokkaImageField(ImageField):
 
     def contribute_to_class(self, cls, name):
         super().contribute_to_class(cls, name)
-        # Attach signals to model
+        # Attach signals to model to delete unused images from Rokka
         post_delete.connect(self._post_delete, sender=cls)
         pre_save.connect(self._pre_save, sender=cls)
 
@@ -49,13 +49,7 @@ class RokkaImageField(ImageField):
             return
 
         old_file = getattr(old_instance, self.attname)
-        new_file = getattr(instance, self.attname)
-
-        old_name = old_file.name if old_file else None
-        new_name = new_file.name if new_file else None
-
-        if old_name and old_name != new_name:
-            old_file.storage.delete(old_name)
+        old_file.storage.delete(old_file.name)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()

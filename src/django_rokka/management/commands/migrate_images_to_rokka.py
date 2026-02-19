@@ -1,11 +1,8 @@
 """
-Management command: migrate_images_to_rokka
+Find all models with RokkaImageField and uploads any images not yet on Rokka.
+Already-migrated images are skipped.
 
-Scans all models with RokkaImageField and uploads any images not yet on Rokka.
-Safe to re-run: already-migrated images are detected and skipped.
-
-Usage:
-    python manage.py migrate_images_to_rokka
+Usage: python manage.py migrate_images_to_rokka
 """
 import re
 from typing import Any
@@ -17,11 +14,11 @@ from django.core.files.storage import default_storage
 from django_rokka.fields import RokkaImageField
 from django_rokka.storage import RokkaStorage
 
-ROKKA_NAME_RE = re.compile(r'^[0-9a-f]{40}\.[a-zA-Z]{2,4}$')
+ROKKA_NAME_PATTERN = re.compile(r'^[0-9a-f]{40}\.[a-zA-Z]{2,4}$')
 
 
 def _is_rokka_name(name: str):
-    return bool(ROKKA_NAME_RE.match(name))
+    return bool(ROKKA_NAME_PATTERN.match(name))
 
 
 def _find_rokka_fields():
@@ -35,16 +32,11 @@ def _find_rokka_fields():
 
 
 class Command(BaseCommand):
-    help = (
-        "Migrate existing images to Rokka. "
-        "Discovers all RokkaImageField fields, downloads each image from its "
-        "current storage backend, uploads it to Rokka, and updates the DB record. "
-        "Already-migrated images are skipped. Safe to re-run."
-    )
+    help = ("Migrate existing images to Rokka. Discovers all RokkaImageField fields, downloads each image from its current storage backend, uploads it to Rokka, and updates the DB record.")
 
     def handle(self, *args, **options):
-        images = _find_rokka_fields()
-        if not images:
+        rokka_fields = _find_rokka_fields()
+        if not rokka_fields:
             self.stdout.write("No RokkaImageFields found in any installed apps.")
             return
 
@@ -52,7 +44,7 @@ class Command(BaseCommand):
         total_skipped = 0
         total_failed = 0
 
-        for model, field_name in images:
+        for model, field_name in rokka_fields:
             self.stdout.write(f"\n── {model._meta.app_label}.{model.__name__}.{field_name}")
 
             migrated, skipped, failed = self._migrate_field(model, field_name)
@@ -76,10 +68,10 @@ class Command(BaseCommand):
         total = qs.count()
 
         if total == 0:
-            self.stdout.write("No records with images.")
+            self.stdout.write("No instances with images.")
             return 0, 0, 0
 
-        self.stdout.write(f"{total} record(s) to migrate.")
+        self.stdout.write(f"{total} image(s) to migrate.")
 
         for instance in qs.iterator():
             field_file = getattr(instance, field_name)
@@ -90,13 +82,13 @@ class Command(BaseCommand):
                 continue
 
             if _is_rokka_name(current_name):
-                self.stdout.write(f"   SKIP     {current_name} (already on Rokka)")
+                self.stdout.write(f"   SKIP     {current_name} (already in Rokka)")
                 skipped += 1
                 continue
 
             try:
-                with default_storage.open(current_name, 'rb') as f:
-                    new_name = rokka_storage._save(current_name, f)
+                with default_storage.open(current_name, 'rb') as file_obj:
+                    new_name = rokka_storage._save(current_name, file_obj)
 
                 model.objects.filter(pk=instance.pk).update(**{field_name: new_name})
                 self.stdout.write(self.style.SUCCESS(f"   MIGRATE  {current_name} -> {new_name}"))

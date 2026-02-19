@@ -26,6 +26,9 @@ class RokkaStorage(Storage):
         )
         return f"{file['hash']}.{file['format']}"
     
+    def _open(self, name, mode='rb'):
+        raise NotImplementedError("RokkaStorage does not support opening files.")
+    
     def delete(self, name):
         self.client.delete_source_image(self.organization, name)
 
