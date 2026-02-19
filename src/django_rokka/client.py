@@ -1,15 +1,21 @@
 import requests
 
+from django_rokka.errors import RokkaImageNotFoundError, RokkaImageUploadError, RokkaImageDeleteError
+
 
 class RokkaApiClient():
     def __init__(self, api_key):
+        if not api_key:
+            raise ValueError("Api key is required to use RokkaApiClient.")
+
         self.headers = {
             'Api-Key': api_key,
             'Api-Version': '1',
         }
+        self.base_url = 'https://api.rokka.io/sourceimages'
 
     def create_source_image(self, organization, filedata):
-        url = f'https://api.rokka.io/sourceimages/{organization}'
+        url = f'{self.base_url}/{organization}'
 
         try:
             if hasattr(filedata, 'seek'):
@@ -20,45 +26,49 @@ class RokkaApiClient():
                 files={'file': filedata}
             )
         except Exception as e:
-            raise ValueError(f"Failed to upload image to rokka: {e}")
+            raise RokkaImageUploadError(f"Failed to upload image to rokka: {e}")
         
         if response.status_code != 200:
-            raise ValueError(f"Failed to upload image to rokka: {response.text.message}")
+            message = response.json().get('message', response.text)
+            raise RokkaImageUploadError(f"Failed to upload image to rokka: {message}")
         
-        data = response.json()
-        return data['items'][0]
+        items = response.json().get('items')
+
+        if not items:
+            raise RokkaImageUploadError(f"Rokka upload response missing items.")
+
+        return items[0]
     
     def delete_source_image(self, organization, img_name):
         img_hash = img_name.split(".")[0]
 
-        url = f'https://api.rokka.io/sourceimages/{organization}/{img_hash}'
-
-        headers = self.headers.copy()
-        headers['Content-Type'] = 'application/json'
+        url = f'{self.base_url}/{organization}/{img_hash}'
 
         try:
-            response = requests.delete(url, headers=headers)
+            response = requests.delete(url, headers=self.headers)
         except Exception as e:
-            raise ValueError(f"Failed to delete image from rokka: {e}")
+            raise RokkaImageDeleteError(f"Failed to delete image from rokka: {e}")
         
         if response.status_code != 204:
-            raise ValueError(f"Failed to delete image from rokka: {response.text.message}")
+            message = response.json().get('message', response.text)
+            raise RokkaImageDeleteError(f"Failed to delete image from rokka: {message}")
         
     def get_source_image(self, organization, img_name):
         img_hash = img_name.split(".")[0]
 
-        url = f'https://api.rokka.io/sourceimages/{organization}/{img_hash}'
-
-        headers = self.headers.copy()
-        headers['Content-Type'] = 'application/json'
+        url = f'{self.base_url}/{organization}/{img_hash}'
 
         try:
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=self.headers)
         except Exception as e:
-            raise ValueError(f"Failed to get image meta from rokka: {e}")
+            raise RokkaImageNotFoundError(f"Failed to get image meta from rokka: {e}")
+        
+        if response.status_code == 404:
+            raise RokkaImageNotFoundError(f"Image not found in rokka: {img_name}")
         
         if response.status_code != 200:
-            raise ValueError(f"Failed to get image meta from rokka: {response.text.message}")
+            message = response.json().get('message', response.text)
+            raise RokkaImageNotFoundError(message=f"Failed to get image meta from rokka: {message}")
         
         return response.json()
         

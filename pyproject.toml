@@ -12,6 +12,6 @@ description = "Django ImageField backed by Rokka.io"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "django>=4.2",
-    "requests>=2.32.5",
+    "Django>=4.2",
+    "rokka-client-codegen",
 ]

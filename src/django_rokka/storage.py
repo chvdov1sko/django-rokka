@@ -1,17 +1,19 @@
 from django.conf import settings
 from django.core.files.storage import Storage
+
 from django_rokka.client import RokkaApiClient
+from django_rokka.errors import RokkaImageNotFoundError, RokkaConfigError
 
 
 class RokkaStorage(Storage):
     def __init__(self):
         api_key = getattr(settings, "ROKKA_API_KEY", None)
         if not api_key:
-            raise ValueError("ROKKA_API_KEY is not set in Django settings.")
+            raise RokkaConfigError("ROKKA_API_KEY is not set in Django settings.")
 
         rokka_organization = getattr(settings, "ROKKA_ORGANIZATION", None)
         if not rokka_organization:
-            raise ValueError("ROKKA_ORGANIZATION is not set in Django settings.")
+            raise RokkaConfigError("ROKKA_ORGANIZATION is not set in Django settings.")
         
         self.default_stack = getattr(settings, "ROKKA_DEFAULT_STACK", "dynamic/noop")
 
@@ -25,8 +27,6 @@ class RokkaStorage(Storage):
         return f"{file['hash']}.{file['format']}"
     
     def delete(self, name):
-        if not name:
-            return
         self.client.delete_source_image(self.organization, name)
 
     def url(self, name, stack = None):
@@ -35,13 +35,18 @@ class RokkaStorage(Storage):
         return f"https://{self.organization}.rokka.io/{stack}/{name}"
 
     def size(self, name):
-        return self.client.get_source_image(self.organization, name).size
+        return self.client.get_source_image(self.organization, name)['size']
     
     def width(self, name):
-        return self.client.get_source_image(self.organization, name).width
+        return self.client.get_source_image(self.organization, name)['width']
     
     def height(self, name):
-        return self.client.get_source_image(self.organization, name).height
+        return self.client.get_source_image(self.organization, name)['height']
 
     def exists(self, name):
-        return False
+        try:
+            self.client.get_source_image(self.organization, name)
+            return True
+        except RokkaImageNotFoundError:
+            return False
+        
