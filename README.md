@@ -51,37 +51,11 @@ URLs resolve to `https://<organization>.rokka.io/<stack>/<hash>.<format>`.
 ## Migrating existing images
 
 If you are replacing an existing `ImageField` with `RokkaImageField` on a project that already
-has images, run the management command **before** switching your storage backend. It reads images
-from your current storage (local, S3, GCS, etc.) and uploads them to Rokka, then updates each
-DB record in place. Already-migrated images are detected and skipped, so the command is safe
+has images, run the management command. 
+It reads images from your current storage (local, S3, GCS, etc.) and uploads them to Rokka, then updates each
+DB record. Already migrated images are detected and skipped, so the command is safe
 to re-run.
 
 ```bash
 python manage.py migrate_images_to_rokka
 ```
-
-### Order of operations
-
-1. Install the package and replace `ImageField` → `RokkaImageField` in your models
-2. Run Django migrations
-3. Run `migrate_images_to_rokka` while your old storage backend is still configured
-4. Verify images are accessible, then optionally remove the old storage configuration
-
-## Configuration reference
-
-| Setting | Required | Default | Description |
-|---|---|---|---|
-| `ROKKA_API_KEY` | ✓ | — | Your Rokka API key |
-| `ROKKA_ORGANIZATION` | ✓ | — | Your Rokka organization name |
-| `ROKKA_DEFAULT_STACK` | | `dynamic/noop` | Stack used for `.url` property |
-
-## Error reference
-
-All errors are importable from `django_rokka.errors`.
-
-| Exception | Raised when |
-|---|---|
-| `RokkaConfigError` | `ROKKA_API_KEY` or `ROKKA_ORGANIZATION` is missing |
-| `RokkaImageUploadError` | Upload to Rokka fails |
-| `RokkaImageDeleteError` | Delete from Rokka fails |
-| `RokkaImageNotFoundError` | Image does not exist in Rokka |
