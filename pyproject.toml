@@ -8,10 +8,10 @@ packages = ["src/django_rokka"]
 [project]
 name = "django-rokka"
 version = "0.1.0"
-description = "Django ImageField backed by Rokka.io"
+description = "Django ImageField for rokka.io"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "Django>=4.2",
-    "rokka-client-codegen",
+    "requests>=2.32.5",
 ]
