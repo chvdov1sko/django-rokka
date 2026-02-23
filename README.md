@@ -1,6 +1,6 @@
 # django-rokka
 
-Django `ImageField` backed by [Rokka.io](https://rokka.io/) — an image processing and CDN service.
+Django `ImageField` backed by [Rokka.io](https://rokka.io/).
 
 Automatically uploads images to Rokka on save, deletes them when a model is deleted or its
 image field is replaced, and gives you stack-aware image URLs.
