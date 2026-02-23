@@ -4,7 +4,6 @@ Already-migrated images are skipped.
 
 Usage: python manage.py migrate_images_to_rokka
 """
-import re
 from typing import Any
 
 from django.apps import apps
@@ -13,16 +12,13 @@ from django.core.files.storage import default_storage
 
 from django_rokka.fields import RokkaImageField
 from django_rokka.storage import RokkaStorage
-
-ROKKA_NAME_PATTERN = re.compile(r'^[0-9a-f]{40}\.[a-zA-Z]{2,4}$')
-
-
-def _is_rokka_name(name: str):
-    return bool(ROKKA_NAME_PATTERN.match(name))
+from django_rokka.helpers import is_rokka_name
 
 
 def _find_rokka_fields():
-    """Return [(ModelClass, field_name), ...] for every RokkaImageField in the project."""
+    """
+    Return [(ModelClass, field_name), ...] for every RokkaImageField in the project.
+    """
     results = []
     for model in apps.get_models():
         for field in model._meta.get_fields():
@@ -81,7 +77,7 @@ class Command(BaseCommand):
                 skipped += 1
                 continue
 
-            if _is_rokka_name(current_name):
+            if is_rokka_name(current_name):
                 self.stdout.write(f"   SKIP     {current_name} (already in Rokka)")
                 skipped += 1
                 continue
